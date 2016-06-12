@@ -135,7 +135,7 @@ def __decode_iterable(obj):
     return obj
 
 
-def __encode_iterable(obj):
+def encode_iterable(obj):
     for i in range(len(obj)):
         if isinstance(obj[i], str):
             obj[i] = obj[i].emcode()
@@ -350,8 +350,8 @@ class p2p_connection(object):
             reply_object = packets[1]
         elif packets[0] == flags.renegotiate:
             if packets[4] == flags.compression:
-                respond = (self.compression != __encode_iterable(json_load(packets[5])))
-                self.compression = __encode_iterable(json_load(packets[5]))
+                respond = (self.compression != encode_iterable(json_load(packets[5])))
+                self.compression = encode_iterable(json_load(packets[5]))
                 self.__print__("Compression methods changed to: %s" % repr(self.compression), level=2)
                 if respond:
                     self.send(flags.renegotiate, flags.compression, json_dump(intersect(compression, self.compression)))
@@ -528,7 +528,7 @@ class p2p_socket(object):
         handler.id = packets[1]
         handler.addr = json_load(packets[3])
         handler.compression = json_load(packets[4])
-        handler.compression = __encode_iterable(handler.compression)
+        handler.compression = encode_iterable(handler.compression)
         self.__print__("Compression methods changed to %s" % repr(handler.compression), level=4)
         if handler in self.awaiting_ids:
             self.awaiting_ids.remove(handler)
