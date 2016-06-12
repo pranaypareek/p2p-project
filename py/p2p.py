@@ -128,6 +128,7 @@ def __decode_dict(obj):
 
 
 def __decode_iterable(obj):
+    obj = list(obj)
     for i in range(len(obj)):
         if isinstance(obj[i], bytes):
             obj[i] = obj[i].decode()
@@ -365,9 +366,10 @@ class p2p_connection(object):
         """Sends a message through its connection. The first argument is message type. All after that are content packets"""
         # This section handles waterfall-specific flags
         id = kargs.get('id', self.server.id)  # Latter is returned if key not found
-        time = from_base_58(kargs.get('time', getUTC()))
+        time = kargs.get('time', getUTC())
         # Begin real method
         msg = pathfinding_message(self.protocol, msg_type, id, list(args), self.compression)
+        msg.time = time
         if (msg.id, msg.time) not in self.server.waterfalls:
             self.server.waterfalls.appendleft((msg.id, msg.time))
         if msg_type in [flags.whisper, flags.broadcast]:
@@ -577,7 +579,7 @@ class p2p_socket(object):
             else:
                 id = msg.sender
             for handler in self.routing_table.values():
-                handler.send(flags.waterfall, *msg.packets, time=to_base_58(msg.time), id=id)
+                handler.send(flags.waterfall, *msg.packets, time=msg.time, id=id)
             self.waterfalls = deque(set(self.waterfalls))
             self.waterfalls = deque([i for i in self.waterfalls if i[1] - getUTC() > 60])
             while len(self.waterfalls) > 100:
