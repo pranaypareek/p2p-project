@@ -112,8 +112,6 @@ def get_lan_ip():
 
 
 def json_load(obj):
-    if isinstance(obj, bytes):
-        obj = obj.decode()
     return json.loads(obj)
 
 
@@ -122,7 +120,7 @@ def __decode_obj(obj):
         obj = obj.decode()
     elif isinstance(obj, dict):
         obj = __decode_dict(obj)
-    elif hasattr(obj, '__iter__'):
+    elif hasattr(obj, '__iter__') and not isinstance(obj, str):
         obj = __decode_iterable(obj)
     return obj
 
