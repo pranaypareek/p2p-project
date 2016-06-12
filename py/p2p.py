@@ -345,7 +345,7 @@ class p2p_connection(object):
 
     def __print__(self, *args, **kargs):
         """Private method to print if level is <= self.server.debug_level"""
-        self.server.__print____(*args, **kargs)
+        self.server.__print__(*args, **kargs)
 
 
 class p2p_daemon(object):
@@ -426,7 +426,7 @@ class p2p_daemon(object):
 
     def __print__(self, *args, **kargs):
         """Private method to print if level is <= self.server.debug_level"""
-        self.server.__print____(*args, **kargs)
+        self.server.__print__(*args, **kargs)
 
 
 class p2p_socket(object):
