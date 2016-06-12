@@ -117,21 +117,26 @@ def json_load(obj):
     return json.loads(obj)
 
 
+def __decode_obj(obj):
+    if isinstance(obj, bytes):
+        obj = obj.decode()
+    elif isinstance(obj, dict):
+        obj = __decode_dict(obj)
+    elif hasattr(obj, '__iter__'):
+        obj = __decode_iterable(obj)
+    return obj
+
+
 def __decode_dict(obj):
     for key in obj:
-        if isinstance(obj[key], bytes):
-            obj.update({key: obj[key].decode()})
-        if isinstance(key, bytes):
-            obj.update({key.decode(): obj[key]})
-            obj.pop(key)
+        obj.update({__decode_obj(key): __decode_obj(obj.pop(key))})
     return obj
 
 
 def __decode_iterable(obj):
     obj = list(obj)
     for i in range(len(obj)):
-        if isinstance(obj[i], bytes):
-            obj[i] = obj[i].decode()
+        obj[i] = __decode_obj(obj[i])
     return obj
 
 
@@ -143,12 +148,7 @@ def encode_iterable(obj):
 
 
 def json_dump(obj):
-    if isinstance(obj, bytes):
-        obj = obj.decode()
-    elif isinstance(obj, dict):
-        obj = __decode_dict(obj)
-    elif hasattr(obj, '__iter__'):
-        obj = __decode_iterable(obj)
+    obj = __decode_obj(obj)
     return json.dumps(obj)
 
 
