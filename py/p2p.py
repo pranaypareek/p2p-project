@@ -584,7 +584,7 @@ class p2p_socket(object):
             self.routing_table.update({id: handler})
         # print("Appended ", port, addr, " to handler list: ", handler)
 
-    def __print____(self, *args, **kargs):
+    def __print__(self, *args, **kargs):
         """Private method to print if level is <= self.__debug_level"""
         if kargs.get('level') <= self.debug_level:
             print(*args)
