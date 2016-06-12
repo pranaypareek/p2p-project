@@ -96,6 +96,21 @@ def intersect(*args):
     return intersection
 
 
+def get_lan_ip():
+    """Retrieves the LAN ip. Expanded from http://stackoverflow.com/a/28950776"""
+    import socket
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        # doesn't even have to be reachable
+        s.connect(('8.8.8.8', 23))
+        IP = s.getsockname()[0]
+    except:
+        IP = '127.0.0.1'
+    finally:
+        s.shutdown(socket.SHUT_RDWR)
+    return IP
+
+
 class protocol(namedtuple("protocol", ['sep', 'subnet', 'encryption'])):
     @property
     def id(self):
@@ -425,6 +440,8 @@ class p2p_socket(object):
         self.queue = deque()        # Queue of received messages. Access through recv()
         if out_addr:                # Outward facing address, if you're port forwarding
             self.out_addr = out_addr
+        elif addr == '0.0.0.0':
+            self.out_addr = get_lan_ip(), port
         else:
             self.out_addr = addr, port
         info = [str(out_addr), prot.id, user_salt]
