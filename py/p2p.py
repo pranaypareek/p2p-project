@@ -112,6 +112,8 @@ def get_lan_ip():
 
 
 def json_load(obj):
+    if isinstance(obj, bytes):
+        return json.loads(obj.decode())
     return json.loads(obj)
 
 
