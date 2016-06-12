@@ -111,6 +111,46 @@ def get_lan_ip():
     return IP
 
 
+def json_load(obj):
+    if isinstance(obj, bytes):
+        obj = obj.decode()
+    return json.loads(obj)
+
+
+def __decode_dict(obj):
+    for key in obj:
+        if isinstance(obj[key], bytes):
+            obj.update({key: obj[key].decode()})
+        if isinstance(key, bytes):
+            obj.update({key.decode(): obj[key]})
+            obj.pop(key)
+    return obj
+
+
+def __decode_iterable(obj):
+    for i in range(len(obj)):
+        if isinstance(obj[i], bytes):
+            obj[i] = obj[i].decode()
+    return obj
+
+
+def __encode_iterable(obj):
+    for i in range(len(obj)):
+        if isinstance(obj[i], str):
+            obj[i] = obj[i].emcode()
+    return obj
+
+
+def json_dump(obj):
+    if isinstance(obj, bytes):
+        obj = obj.decode()
+    elif isinstance(obj, dict):
+        obj = __decode_dict(obj)
+    elif hasattr(obj, '__iter__'):
+        obj = __decode_iterable(obj)
+    return json.dumps(obj)
+
+
 class protocol(namedtuple("protocol", ['sep', 'subnet', 'encryption'])):
     @property
     def id(self):
@@ -296,7 +336,7 @@ class p2p_connection(object):
         try:
             msg = pathfinding_message.feed_string(self.protocol, raw_msg, False, self.compression)
         except IndexError:
-            self.send(flags.renegotiate, flags.compression, json.dumps([algo for algo in self.compression if algo is not method]))
+            self.send(flags.renegotiate, flags.compression, json_dump([algo for algo in self.compression if algo is not method]))
             self.send(flags.renegotiate, flags.resend)
             return
         packets = msg.packets
@@ -309,11 +349,11 @@ class p2p_connection(object):
             reply_object = packets[1]
         elif packets[0] == flags.renegotiate:
             if packets[4] == flags.compression:
-                respond = (self.compression != json.loads(packets[5]))
-                self.compression = json.loads(packets[5])
+                respond = (self.compression != __encode_iterable(json_load(packets[5])))
+                self.compression = __encode_iterable(json_load(packets[5]))
                 self.__print__("Compression methods changed to: %s" % repr(self.compression), level=2)
                 if respond:
-                    self.send(flags.renegotiate, flags.compression, json.dumps(intersect(compression, self.compression)))
+                    self.send(flags.renegotiate, flags.compression, json_dump(intersect(compression, self.compression)))
                 return
             elif packets[4] == flags.resend:
                 self.send(*self.last_sent)
@@ -374,7 +414,7 @@ class p2p_daemon(object):
             if conn is not None:
                 self.__print__('Incoming connection from %s' % repr(addr), level=1)
                 handler = p2p_connection(conn, self.server, self.protocol)
-                handler.send(flags.whisper, flags.handshake, self.server.id, self.protocol.id, json.dumps(self.server.out_addr), json.dumps(compression))
+                handler.send(flags.whisper, flags.handshake, self.server.id, self.protocol.id, json_dump(self.server.out_addr), json_dump(compression))
                 handler.sock.settimeout(0.01)
                 self.server.awaiting_ids.append(handler)
                 # print("Appended ", handler.addr, " to handler list: ", handler)
@@ -484,16 +524,17 @@ class p2p_socket(object):
             self.awaiting_ids.remove(handler)
             return
         handler.id = packets[1]
-        handler.addr = json.loads(packets[3].decode())
-        handler.compression = json.loads(packets[4].decode())
+        handler.addr = json_load(packets[3])
+        handler.compression = json_load(packets[4])
+        handler.compression = __encode_iterable(handler.compression)
         self.__print__("Compression methods changed to %s" % repr(handler.compression), level=4)
         if handler in self.awaiting_ids:
             self.awaiting_ids.remove(handler)
         self.routing_table.update({packets[1]: handler})
-        handler.send(flags.whisper, flags.peers, json.dumps([(self.routing_table[key].addr, key.decode()) for key in self.routing_table.keys()]))
+        handler.send(flags.whisper, flags.peers, json_dump([(self.routing_table[key].addr, key) for key in self.routing_table.keys()]))
 
     def __handle_peers(self, packets, handler):
-        new_peers = json.loads(packets[1].decode())
+        new_peers = json_load(packets[1])
         for addr, id in new_peers:
             if len(self.outgoing) < max_outgoing and addr:
                 self.connect(addr[0], addr[1], id)
@@ -501,7 +542,7 @@ class p2p_socket(object):
     def __handle_response(self, packets, handler):
         self.__print__("Response received for request id %s" % packets[1], level=1)
         if self.requests.get(packets[1]):
-            addr = json.loads(packets[2].decode())
+            addr = json_load(packets[2])
             if addr:
                 msg = self.requests.get(packets[1])
                 self.requests.pop(packets[1])
@@ -510,9 +551,9 @@ class p2p_socket(object):
 
     def __handle_request(self, packets, handler):
         if self.routing_table.get(packets[2]):
-            handler.send(flags.broadcast, flags.response, packets[1], json.dumps([self.routing_table.get(packets[2]).addr, packets[2].decode()]))
+            handler.send(flags.broadcast, flags.response, packets[1], json_dump([self.routing_table.get(packets[2]).addr, packets[2]]))
         elif packets[2] == '*'.encode():
-            self.send(flags.broadcast, flags.peers, json.dumps([(key, self.routing_table[key].addr) for key in self.routing_table.keys()]))
+            self.send(flags.broadcast, flags.peers, json_dump([(key, self.routing_table[key].addr) for key in self.routing_table.keys()]))
 
     def send(self, *args, **kargs):
         """Sends data to all peers. type flag will override normal subflag. Defaults to 'broadcast'"""
@@ -577,7 +618,7 @@ class p2p_socket(object):
         conn.connect((addr, port))
         handler = p2p_connection(conn, self, self.protocol, outgoing=True)
         handler.id = id
-        handler.send(flags.whisper, flags.handshake, self.id, self.protocol.id, json.dumps(self.out_addr), json.dumps(compression))
+        handler.send(flags.whisper, flags.handshake, self.id, self.protocol.id, json_dump(self.out_addr), json_dump(compression))
         if not id:
             self.awaiting_ids.append(handler)
         else:
