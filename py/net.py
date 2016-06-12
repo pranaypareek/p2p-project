@@ -371,7 +371,7 @@ class secure_socket(socket.socket):
         try:
             self.verify(msg, sig)
         except verification_error:
-            warnings.warn(RuntimeWarning, "Could not verify your peer's signature.")
+            warnings.warn("Could not verify your peer's signature.", RuntimeWarning)
         # If a size isn't defined, return the whole message. Otherwise manage the buffer as well.
         self.__buffer += msg
         ret = self.__buffer[:size]
