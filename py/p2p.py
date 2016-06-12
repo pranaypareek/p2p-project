@@ -138,7 +138,7 @@ def __decode_iterable(obj):
 def encode_iterable(obj):
     for i in range(len(obj)):
         if isinstance(obj[i], str):
-            obj[i] = obj[i].emcode()
+            obj[i] = obj[i].encode()
     return obj
 
 
