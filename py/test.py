@@ -182,8 +182,8 @@ def main():
     test_pathfinding_message(200)
     print("Testing message state machine (sans network functions)")
     test_message_sans_network(1000)
-    print("Testing secure socket methods")
-    test_net_sans_network(3)
+    #print("Testing secure socket methods")
+    #test_net_sans_network(3)
     print("Testing secure socket communications")
     test_net_connection(3)
 
