@@ -111,14 +111,18 @@ def test_message_sans_network(iters):
 
 def test_net_sans_network(iters):
     for i in range(iters):
+        print("{0} L114".format(iter))
         f = net.secure_socket(silent=True, keysize=1024)
         test = str(uuid.uuid4()).encode()
+        print("{0} L117 test: ".format(test))
         f.settimeout(1)
+        print("{0} L119 f:".format(f))
         assert f.keysize == 1024
         assert test == net.decrypt(net.encrypt(test, f.pub), f.priv)
         for op in ['best', 'SHA-512']:
             assert f.verify(test, f.sign(test, op), f.pub)
         g = f.dup()
+        print("{0} L125 g:".format(g))
         assert f.pub == g.pub
         assert f.priv == g.priv
         assert f.keysize == g.keysize
